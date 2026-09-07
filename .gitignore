@@ -7,3 +7,5 @@ scripts/*.js
 scripts/*.d.ts
 .env
 .env.*
+.vercel
+!.env.example
