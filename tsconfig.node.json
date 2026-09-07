@@ -1,0 +1,1 @@
+{ "compilerOptions": { "composite": true, "target": "ES2020", "module": "ESNext", "moduleResolution": "bundler", "allowSyntheticDefaultImports": true, "allowImportingTsExtensions": true, "emitDeclarationOnly": true, "outDir": "./node_modules/.cache/campuscare-config", "types": ["node"], "lib": ["ESNext"] }, "include": ["vite.config.ts", "scripts/*.ts"] }
