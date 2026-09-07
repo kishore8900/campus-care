@@ -119,8 +119,8 @@ app.post('/api/auth/register', async (req, res) => {
   users.push(user); return res.status(201).json({ token: sign(user), user: { id: user.id, name: user.name, email: user.email, role: user.role } })
 })
 app.post('/api/auth/login', loginRateLimit, async (req, res) => {
-  const parsed = z.object({ email: z.string().email(), password: z.string().min(1) }).safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ error: 'Enter your email and password.' })
+  const parsed = z.object({ email: z.string().email(), password: z.string().min(8).max(72) }).safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ error: 'Enter a valid college email and a password of at least 8 characters.' })
   const user = users.find(item => item.email === parsed.data.email.toLowerCase())
   if (!user || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) return res.status(401).json({ error: 'Incorrect email or password.' })
   return res.json({ token: sign(user), user: { id: user.id, name: user.name, email: user.email, role: user.role } })
