@@ -19,5 +19,4 @@ const environment = z.object({
 const parsed = environment.parse(process.env)
 export const config = { ...parsed, AI_PROVIDER: parsed.AI_PROVIDER ?? (process.env.VERCEL ? 'gateway' as const : 'ollama' as const) }
 if (config.NODE_ENV === 'production' && !config.JWT_SECRET) throw new Error('JWT_SECRET must be set to a random value of at least 32 characters in production.')
-if (config.AI_PROVIDER === 'gateway' && !config.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN) throw new Error('AI Gateway requires AI_GATEWAY_API_KEY locally or Vercel OIDC when deployed.')
 export const jwtSecret = config.JWT_SECRET ?? 'development-only-secret-change-before-deployment'

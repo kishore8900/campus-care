@@ -142,7 +142,7 @@ app.post('/api/preview/chat', async (req, res) => {
     return chatTransport(req, res).complete(makeReply(message, assistantMode, details))
   }
   // Anonymous preview may use only the local model; never spend cloud credits or send guest chats to a cloud provider.
-  if (config.AI_PROVIDER !== 'ollama') return res.status(503).json({ error: 'Live preview requires local Ollama. Sign in to use the configured cloud assistant.' })
+  if (!aiSupportEnabled()) return chatTransport(req, res).complete(makeReply(result.response, 'rules'))
   const key = req.ip ?? 'local', now = Date.now(), previous = previewWindows.get(key)
   const window = previous && previous.resetsAt > now ? previous : { count: 0, resetsAt: now + 15 * 60_000 }
   if (activePreviews.has(key)) return res.status(409).json({ error: 'Your preview message is still being answered.' })
