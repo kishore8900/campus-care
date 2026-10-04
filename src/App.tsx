@@ -21,13 +21,18 @@ const studentNav: NavItem<StudentView>[] = [
 ]
 
 export default function App() {
-  const navigate = useNavigate(); const location = useLocation(); const active = studentViewFor(location.pathname)
+  const navigate = useNavigate(); const location = useLocation(); const routeView = studentViewFor(location.pathname)
   const sessionEpoch = useRef(0); const requestActive = useRef(false); const chatAbort = useRef<AbortController | null>(null)
   const [user, setUser] = useState<SessionUser | null>(() => new URLSearchParams(window.location.search).has('preview') ? previewUser : null)
+  const previewMode = user?.id === 'preview'
+  const active = previewMode && routeView === 'chat' ? 'resources' : routeView
   const [sessionLoading, setSessionLoading] = useState(Boolean(sessionToken())); const [pending, setPending] = useState(false); const [draft, setDraft] = useState(''); const [notice, setNotice] = useState(''); const [safetyOpen, setSafetyOpen] = useState(false)
   const [messages, setMessages] = useState<ApiChat[]>([]); const [moods, setMoods] = useState<ApiMood[]>([]); const [resources, setResources] = useState<CampusResource[]>([]); const [tips, setTips] = useState<WellnessTip[]>([]); const [exercises, setExercises] = useState<BreathingExercise[]>([]); const [contentError, setContentError] = useState('')
 
   useEffect(() => () => chatAbort.current?.abort(), [])
+  useEffect(() => {
+    if (previewMode && routeView === 'chat') navigate(studentRoute('resources', true), { replace: true })
+  }, [navigate, previewMode, routeView])
   useEffect(() => {
     let activeRequest = true
     Promise.all([supportApi.resources(), supportApi.tips(), supportApi.exercises()]).then(([resourceItems, tipItems, exerciseItems]) => { if (activeRequest) { setResources(resourceItems); setTips(tipItems); setExercises(exerciseItems) } }).catch(() => { if (activeRequest) setContentError('Some support information could not be loaded. Try again shortly.') })
@@ -72,13 +77,13 @@ export default function App() {
   }
   const endSession = () => { sessionEpoch.current += 1; requestActive.current = false; chatAbort.current?.abort(); chatAbort.current = null; setSessionToken(null); setUser(null); setMessages([]); setMoods([]); setDraft(''); setPending(false); setNotice(''); navigate('/') }
   const authenticated = (session: { token: string; user: SessionUser }) => { setSessionToken(session.token); setUser(session.user); navigate(session.user.role === 'ADMIN' ? '/admin' : '/chat', { replace: true }) }
-  const preview = () => { setUser(previewUser); navigate(studentRoute('chat', true), { replace: true }) }
+  const preview = () => { setUser(previewUser); navigate(studentRoute('resources', true), { replace: true }) }
 
   if (sessionLoading) return <div className="full-loading"><LoaderCircle className="spin"/><span>Opening Campus Care…</span></div>
   if (!user) return <AuthPage onAuthenticated={authenticated} onPreview={preview}/>
   if (user.role === 'ADMIN') return <AdminApp user={user} onSignOut={endSession}/>
-  return <AppShell productName="Campus Care" user={user} active={active} navigation={studentNav} onNavigate={go} onSignOut={endSession} urgentAction={() => setSafetyOpen(true)} footerNote={user.id === 'preview' ? 'Preview messages are temporary.' : 'Messages are stored in your account and visible to authorized administrators.'}>
-    {user.id === 'preview' && <div className="preview-bar"><Shield size={16}/><span><strong>Preview mode.</strong> Messages are processed by {import.meta.env.DEV ? 'this computer' : 'the Campus Care service'} and are not saved after refresh.</span><Button variant="ghost" size="small" onClick={endSession}>Exit preview</Button></div>}
+  return <AppShell productName="Campus Care" user={user} active={active} navigation={user.id === 'preview' ? studentNav.filter(item => item.id !== 'chat') : studentNav} onNavigate={go} onSignOut={endSession} urgentAction={() => setSafetyOpen(true)} footerNote={user.id === 'preview' ? 'Preview activity is temporary.' : 'Messages are stored in your account and visible to authorized administrators.'}>
+    {user.id === 'preview' && <div className="preview-bar"><Shield size={16}/><span><strong>Preview mode.</strong> Your activity is temporary and is not saved after refresh.</span><Button variant="ghost" size="small" onClick={endSession}>Exit preview</Button></div>}
     {notice && <div className="notice" role="status"><span>{notice}</span><Button variant="ghost" className="icon-button" onClick={() => setNotice('')} aria-label="Dismiss message"><X size={17}/></Button></div>}
     {active === 'chat' && <div className="chat-page"><PageHeader title="Chat" description="Ask a study question, talk through a concern, or find campus support." action={<Button variant="secondary" onClick={() => go('help')}><HelpCircle size={17}/> Urgent help</Button>}/><ChatLayout messages={messages} draft={draft} pending={pending} preview={user.id === 'preview'} onDraft={setDraft} onSend={send} onStop={() => chatAbort.current?.abort()}/></div>}
     {active === 'resources' && <ResourcesPage resources={resources} tips={tips} error={contentError}/>} 
